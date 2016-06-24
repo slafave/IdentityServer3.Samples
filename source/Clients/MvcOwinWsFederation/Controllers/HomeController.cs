@@ -21,6 +21,7 @@ namespace MvcOwinWsFederation.Controllers
         public ActionResult SignOut()
         {
             Request.GetOwinContext().Authentication.SignOut();
+            // ReSharper disable once Mvc.ViewNotResolved
             return View();
         }
     }
