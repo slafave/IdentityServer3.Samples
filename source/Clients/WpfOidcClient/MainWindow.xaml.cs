@@ -1,5 +1,9 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
+using IdentityModel.Client;
+using Microsoft.IdentityModel.Protocols;
 using WpfOidcClient.OidcClient;
 
 namespace WpfOidcClient
@@ -38,7 +42,7 @@ namespace WpfOidcClient
             //    LoadUserProfile = true
             //};
 
-            var settings = new OidcSettings
+            _oidcSettings = new OidcSettings
             {
                 Authority = "https://idgatewayawsstage.flqa.net",
                 ClientId = "nativeClientPOC",
@@ -48,35 +52,92 @@ namespace WpfOidcClient
                 LoadUserProfile = true
             };
 
-            await _login.LoginAsync(settings);
+            await _login.LoginAsync(_oidcSettings);
         }
 
         void _login_Done(object sender, LoginResult e)
         {
-            if (e.Success)
+            _loginResult = e;
+
+            if (_loginResult.Success)
             {
                 var sb = new StringBuilder(128);
 
-                foreach (var claim in e.User.Claims)
+                foreach (var claim in _loginResult.User.Claims)
                 {
                     sb.AppendLine($"{claim.Type}: {claim.Value}");
                 }
 
                 sb.AppendLine();
 
-                sb.AppendLine($"Identity token: {e.IdentityToken}");
-                sb.AppendLine($"Access token: {e.AccessToken}");
-                sb.AppendLine($"Access token expiration: {e.AccessTokenExpiration}");
-                sb.AppendLine($"Refresh token: {e?.RefreshToken ?? "none" }");
+                sb.AppendLine($"Identity token: {_loginResult.IdentityToken}");
+                sb.AppendLine();
+                sb.AppendLine($"Access token: {_loginResult.AccessToken}");
+                sb.AppendLine($"Access token expiration: {_loginResult.AccessTokenExpiration}");
+                sb.AppendLine();
+                sb.AppendLine($"Refresh token: {_loginResult?.RefreshToken ?? "none" }");
 
                 IdentityTextBox.Text = sb.ToString();
             }
             else
             {
-                IdentityTextBox.Text = e.ErrorMessage;
+                IdentityTextBox.Text = _loginResult.ErrorMessage;
             }
+        }
 
+        private LoginResult _loginResult;
+        private OidcSettings _oidcSettings;
 
+        private static async Task<TokenResponse> RefreshToken(OidcSettings settings, string refreshToken)
+        {
+            var discoAddress = settings.Authority + "/.well-known/openid-configuration";
+
+            var manager = new ConfigurationManager<OpenIdConnectConfiguration>(discoAddress);
+
+            var config = await manager.GetConfigurationAsync();
+
+            var tokenClient = new TokenClient(
+                config.TokenEndpoint,
+                settings.ClientId,
+                settings.ClientSecret);
+
+            return await tokenClient.RequestRefreshTokenAsync(refreshToken);
+        }
+
+        private async void refresh_Click(object sender, RoutedEventArgs e)
+        {
+            var response = await RefreshToken(_oidcSettings, _loginResult.RefreshToken);
+
+            IdentityTextBox.Clear();
+
+            if (!response.IsHttpError)
+            {
+                _loginResult.AccessToken = response.AccessToken;
+                _loginResult.AccessTokenExpiration = DateTime.Now.AddSeconds(response.ExpiresIn);
+                _loginResult.RefreshToken = response.RefreshToken;
+
+                var sb = new StringBuilder(128);
+
+                foreach (var claim in _loginResult.User.Claims)
+                {
+                    sb.AppendLine($"{claim.Type}: {claim.Value}");
+                }
+
+                sb.AppendLine();
+
+                sb.AppendLine($"Identity token: {_loginResult.IdentityToken}");
+                sb.AppendLine();
+                sb.AppendLine($"Access token: {_loginResult.AccessToken}");
+                sb.AppendLine($"Access token expiration: {_loginResult.AccessTokenExpiration}");
+                sb.AppendLine();
+                sb.AppendLine($"Refresh token: {_loginResult?.RefreshToken ?? "none" }");
+
+                IdentityTextBox.Text = sb.ToString();
+            }
+            else
+            {
+                IdentityTextBox.Text = response.HttpErrorStatusCode + " " + response.HttpErrorReason;
+            }
         }
     }
 }
