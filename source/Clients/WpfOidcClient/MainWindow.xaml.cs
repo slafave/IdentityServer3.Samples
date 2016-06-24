@@ -1,6 +1,4 @@
-﻿using IdentityModel.Client;
-using Sample;
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using WpfOidcClient.OidcClient;
 
@@ -12,6 +10,8 @@ namespace WpfOidcClient
 
         public MainWindow()
         {
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = ((sender, certificate, chain, sslPolicyErrors) => true);
+
             InitializeComponent();
 
             _login = new LoginWebView();
@@ -28,13 +28,23 @@ namespace WpfOidcClient
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
+            //var settings = new OidcSettings
+            //{
+            //    Authority = "https://localhost:44333/core",
+            //    ClientId = "wpf.hybrid",
+            //    ClientSecret = "secret",
+            //    RedirectUri = "http://localhost/wpf.hybrid",
+            //    Scope = "openid profile write",
+            //    LoadUserProfile = true
+            //};
+
             var settings = new OidcSettings
             {
-                Authority = "https://localhost:44333/core",
-                ClientId = "wpf.hybrid",
+                Authority = "https://idgatewayawsstage.flqa.net",
+                ClientId = "nativeClientPOC",
                 ClientSecret = "secret",
                 RedirectUri = "http://localhost/wpf.hybrid",
-                Scope = "openid profile write",
+                Scope = "openid offline_access flapi.public profile",
                 LoadUserProfile = true
             };
 

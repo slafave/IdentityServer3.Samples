@@ -34,6 +34,8 @@ namespace WpfOidcClientPop
 
         public MainWindow()
         {
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = ((sender, certificate, chain, sslPolicyErrors) => true);
+
             InitializeComponent();
 
             _settings = new OidcSettings
