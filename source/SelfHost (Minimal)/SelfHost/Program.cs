@@ -11,6 +11,7 @@ namespace SelfHost
             Console.Title = "IdentityServer3 SelfHost";
 
             Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
                 .WriteTo
                 .LiterateConsole(outputTemplate: "{Timestamp:HH:MM} [{Level}] ({Name:l}){NewLine} {Message}{NewLine}{Exception}")
                 .CreateLogger();

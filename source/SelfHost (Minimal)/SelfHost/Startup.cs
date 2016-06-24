@@ -21,6 +21,10 @@ namespace SelfHost
 
                 SigningCertificate = Certificate.Get(),
                 Factory = factory,
+                LoggingOptions = new LoggingOptions()
+                {
+                    EnableHttpLogging = true
+                }
             };
 
             appBuilder.UseIdentityServer(options);
